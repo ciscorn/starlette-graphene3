@@ -1,0 +1,14 @@
+.DS_Store
+__pycache__/
+.py[cod]
+.mypy_cache
+.venv
+.env
+.coverage
+/coverage.xml
+.pytest_cache/
+.vscode/
+*.pyc
+MANIFEST
+/dist/
+__pypackages__/
