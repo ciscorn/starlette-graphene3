@@ -1,9 +1,0 @@
-README.md
-setup.cfg
-setup.py
-starlette_graphene3.py
-starlette_graphene3.egg-info/PKG-INFO
-starlette_graphene3.egg-info/SOURCES.txt
-starlette_graphene3.egg-info/dependency_links.txt
-starlette_graphene3.egg-info/requires.txt
-starlette_graphene3.egg-info/top_level.txt

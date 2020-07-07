@@ -164,7 +164,7 @@ def test_invalid_value(client):
         ws.send_json({"type": GQL_CONNECTION_TERMINATE})
 
 
-def test_query(client):
+def test_query_over_ws(client):
     with client.websocket_connect("/", "graphql-ws") as ws:
         ws.send_json({"type": GQL_CONNECTION_INIT})
         msg = ws.receive_json()
@@ -186,7 +186,7 @@ def test_query(client):
         ws.send_json({"type": GQL_CONNECTION_TERMINATE})
 
 
-def test_query_with_variables_and_opname(client):
+def test_query_over_ws_with_variables_and_opname(client):
     with client.websocket_connect("/", "graphql-ws") as ws:
         ws.send_json({"type": GQL_CONNECTION_INIT})
         msg = ws.receive_json()
