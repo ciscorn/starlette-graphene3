@@ -16,6 +16,7 @@ import asyncio
 import graphene
 from graphene_file_upload.scalars import Upload
 
+from starlette.applications import Starlette
 from starlette_graphene3 import GraphQLApp
 
 
@@ -55,6 +56,6 @@ class Subscription(graphene.ObjectType):
 
 
 app = Starlette()
-schema = graphene.Schema(query=Query, mutation=Mutation, subscription=Subscription))
+schema = graphene.Schema(query=Query, mutation=Mutation, subscription=Subscription)
 app.mount("/", GraphQLApp(schema))
 ```
