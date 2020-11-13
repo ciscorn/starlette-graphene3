@@ -39,7 +39,7 @@ def test_single_subscription(client):
         ws.send_json({"type": GQL_CONNECTION_TERMINATE})
 
 
-def test_single_subscription_error(client):
+def test_single_subscription_error1(client):
     with client.websocket_connect("/", "graphql-ws") as ws:
         ws.send_json({"type": GQL_CONNECTION_INIT})
         msg = ws.receive_json()
@@ -48,13 +48,34 @@ def test_single_subscription_error(client):
             {
                 "type": GQL_START,
                 "id": "q1",
-                "payload": {"query": r"subscription { raiseError }"},
+                "payload": {"query": r"subscription { raiseError1 }"},
             }
         )
         msg = ws.receive_json()
         assert msg["type"] == GQL_ERROR
         assert "message" in msg["payload"]
         assert "locations" in msg["payload"]
+
+
+def test_single_subscription_error2(client):
+    with client.websocket_connect("/", "graphql-ws") as ws:
+        ws.send_json({"type": GQL_CONNECTION_INIT})
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_CONNECTION_ACK
+        ws.send_json(
+            {
+                "type": GQL_START,
+                "id": "q1",
+                "payload": {"query": r"subscription { raiseError2 }"},
+            }
+        )
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_DATA
+        assert msg["id"] == "q1"
+        assert msg["payload"]["data"]["raiseError2"] == 0
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_DATA
+        assert "errors" in msg["payload"]
 
 
 def test_named_subscription(client):

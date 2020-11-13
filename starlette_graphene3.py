@@ -137,12 +137,13 @@ class GraphQLApp:
         except WebSocketDisconnect:
             pass
         finally:
-            await asyncio.gather(
-                *(
-                    subscriptions[operation_id].aclose()
-                    for operation_id in subscriptions
+            if subscriptions:
+                await asyncio.gather(
+                    *(
+                        subscriptions[operation_id].aclose()
+                        for operation_id in subscriptions
+                    )
                 )
-            )
 
     async def _handle_websocket_message(
         self,

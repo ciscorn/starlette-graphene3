@@ -45,14 +45,19 @@ class Mutation(graphene.ObjectType):
 
 class Subscription(graphene.ObjectType):
     count = graphene.Int(upto=graphene.Int())
-    raiseError = graphene.Int()
+    raiseError1 = graphene.Int()
+    raiseError2 = graphene.Int()
 
     async def subscribe_count(root, info, upto=3):
         for i in range(upto):
             yield i
             await asyncio.sleep(0.01)
 
-    async def subscribe_raiseError(root, info):
+    async def subscribe_raiseError1(root, info):
+        raise ValueError
+
+    async def subscribe_raiseError2(root, info):
+        yield 0
         raise ValueError
 
 
