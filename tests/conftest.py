@@ -1,7 +1,7 @@
 import asyncio
 
-import pytest
 import graphene
+import pytest
 from graphene_file_upload.scalars import Upload
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
@@ -49,12 +49,11 @@ class Subscription(graphene.ObjectType):
 
     async def subscribe_count(root, info, upto=3):
         for i in range(upto):
-            yield {'count': i}
+            yield i
             await asyncio.sleep(0.01)
 
     async def subscribe_raiseError(root, info):
         raise ValueError
-        yield None
 
 
 @pytest.fixture
@@ -70,4 +69,9 @@ def client(schema):
 
 
 app = Starlette()
-app.mount("/", GraphQLApp(graphene.Schema(query=Query, mutation=Mutation, subscription=Subscription)))
+app.mount(
+    "/",
+    GraphQLApp(
+        graphene.Schema(query=Query, mutation=Mutation, subscription=Subscription)
+    ),
+)

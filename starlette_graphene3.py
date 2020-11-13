@@ -26,6 +26,7 @@ from graphql import (
     subscribe,
     validate,
 )
+from graphql.language.ast import DocumentNode, OperationDefinitionNode
 from graphql.utilities import get_operation_ast
 from starlette.datastructures import UploadFile
 from starlette.requests import HTTPConnection, Request
@@ -136,8 +137,12 @@ class GraphQLApp:
         except WebSocketDisconnect:
             pass
         finally:
-            for operation_id in subscriptions:
-                await subscriptions[operation_id].aclose()
+            await asyncio.gather(
+                *(
+                    subscriptions[operation_id].aclose()
+                    for operation_id in subscriptions
+                )
+            )
 
     async def _handle_websocket_message(
         self,
@@ -173,6 +178,8 @@ class GraphQLApp:
         operation_name = data.get("operationName")
         context_value = await self._get_context_value(websocket)
         errors: List[GraphQLError] = []
+        operation: Optional[OperationDefinitionNode] = None
+        document: Optional[DocumentNode] = None
 
         try:
             document = parse(query)
@@ -276,7 +283,7 @@ class GraphQLApp:
 
         asyncgen = cast(AsyncGenerator, result)
         subscriptions[operation_id] = asyncgen
-        asyncio.ensure_future(
+        asyncio.create_task(
             self._observe_subscription(asyncgen, operation_id, websocket)
         )
         return []

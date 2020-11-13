@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "starlette-graphene3"
-version = "0.1.1"
+version = "0.2.0"
 description = "Use Graphene v3 on Starlette"
 authors = ["Taku Fukada <naninunenor@gmail.com>"]
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.7"
 graphene = ">=3.0b6"
-starlette = "^0.13.8"
+starlette = "^0.14.1"
 
 [tool.poetry.dev-dependencies]
 black = "^20.8b1"
@@ -29,7 +29,8 @@ pytest = "^6.1.2"
 pytest-cov = "^2.10.1"
 python-multipart = "^0.0.5"
 uvicorn = "^0.12.2"
-requests = "^2.24.0"
+requests = "^2.25.0"
+pytest-asyncio = "^0.14.0"
 
 [tool.isort]
 include_trailing_comma = true

@@ -52,8 +52,9 @@ def test_single_subscription_error(client):
             }
         )
         msg = ws.receive_json()
-        assert msg["type"] == GQL_DATA
-        assert "errors" in msg["payload"]
+        assert msg["type"] == GQL_ERROR
+        assert "message" in msg["payload"]
+        assert "locations" in msg["payload"]
 
 
 def test_named_subscription(client):

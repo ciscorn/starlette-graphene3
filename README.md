@@ -1,6 +1,6 @@
 # starlette_graphene3
 
-An ASGI app for Graphene v3. This can replace `starlette.graphql.GraphQLApp` that is made for Graphene v2.
+An ASGI app for Graphene v3 (version 3). This can replace `starlette.graphql.GraphQLApp` that is made for Graphene v2.
 
 [![codecov](https://codecov.io/gh/ciscorn/starlette-graphene3/branch/master/graph/badge.svg)](https://codecov.io/gh/ciscorn/starlette-graphene3)
 
@@ -51,7 +51,7 @@ class Subscription(graphene.ObjectType):
 
     async def subscribe_count(root, info, upto=3):
         for i in range(upto):
-            yield {'count': i}
+            yield i
             await asyncio.sleep(1)
 
 
