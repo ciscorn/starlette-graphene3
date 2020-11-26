@@ -155,6 +155,7 @@ class GraphQLApp:
         message_type = cast(str, message.get("type"))
 
         if message_type == GQL_CONNECTION_INIT:
+            websocket.scope["connection_params"] = message.get("payload")
             await websocket.send_json({"type": GQL_CONNECTION_ACK})
         elif message_type == GQL_CONNECTION_TERMINATE:
             await websocket.close()
