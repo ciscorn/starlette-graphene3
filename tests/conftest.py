@@ -18,6 +18,7 @@ class Query(graphene.ObjectType):
     me = graphene.Field(User)
     user = graphene.Field(User, id=graphene.ID(required=True))
     user_async = graphene.Field(User, id=graphene.ID(required=True))
+    show_connection_params = graphene.Field(graphene.String)
 
     def resolve_me(root, info):
         return {"id": "john", "name": "John"}
@@ -27,6 +28,9 @@ class Query(graphene.ObjectType):
 
     async def resolve_user_async(root, info, id):
         return {"id": id, "name": id.capitalize()}
+
+    def resolve_show_connection_params(root, info):
+        return str(info.context["request"].scope["connection_params"])
 
 
 class FileUploadMutation(graphene.Mutation):

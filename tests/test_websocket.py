@@ -232,3 +232,27 @@ def test_query_over_ws_with_variables_and_opname(client):
         assert msg["id"] == "q1"
         assert msg["payload"]["data"]["user"]["name"] == "Bob"
         ws.send_json({"type": GQL_CONNECTION_TERMINATE})
+
+
+def test_connection_params(client):
+    with client.websocket_connect("/", "graphql-ws") as ws:
+        ws.send_json({"type": GQL_CONNECTION_INIT, "payload": {"authToken": "dummy"}})
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_CONNECTION_ACK
+        ws.send_json(
+            {
+                "type": GQL_START,
+                "id": "q1",
+                "payload": {
+                    "query": r"query { showConnectionParams }",
+                    "operationName": None,
+                },
+            }
+        )
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_DATA
+        assert msg["id"] == "q1"
+        assert (
+            msg["payload"]["data"]["showConnectionParams"] == "{'authToken': 'dummy'}"
+        )
+        ws.send_json({"type": GQL_CONNECTION_TERMINATE})
