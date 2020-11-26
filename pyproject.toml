@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "starlette-graphene3"
-version = "0.2.0"
+version = "0.2.1"
 description = "Use Graphene v3 on Starlette"
 authors = ["Taku Fukada <naninunenor@gmail.com>"]
 license = "MIT"
 homepage = "https://github.com/ciscorn/starlette-graphene3"
 repository = "https://github.com/ciscorn/starlette-graphene3"
-keywords = ["graphene", "graphql"]
+keywords = ["graphene", "graphql", "asgi", "starlette"]
 readme = "README.md"
 classifiers = [
     "Operating System :: OS Independent",
