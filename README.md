@@ -1,4 +1,4 @@
-# starlette_graphene3
+# starlette-graphene3
 
 An ASGI app for Graphene v3 (version 3). This can replace `starlette.graphql.GraphQLApp` that is made for Graphene v2.
 
@@ -6,9 +6,20 @@ An ASGI app for Graphene v3 (version 3). This can replace `starlette.graphql.Gra
 
 It supports:
 
-- WebSockets (Subscriptions)
+- Queries and Mutations (over HTTP or WebSocket)
+- Subscriptions (over WebSocket)
 - File uploading (https://github.com/jaydenseric/graphql-multipart-request-spec)
 - GraphQL Playground
+
+
+## Installation
+
+```bash
+pip3 install -U starlette-graphene3
+```
+
+
+## Example
 
 ```python
 import asyncio
