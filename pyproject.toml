@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "starlette-graphene3"
-version = "0.2.1"
+version = "0.2.2"
 description = "Use Graphene v3 on Starlette"
 authors = ["Taku Fukada <naninunenor@gmail.com>"]
 license = "MIT"
