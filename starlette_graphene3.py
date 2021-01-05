@@ -28,6 +28,7 @@ from graphql import (
 )
 from graphql.language.ast import DocumentNode, OperationDefinitionNode
 from graphql.utilities import get_operation_ast
+from starlette.background import BackgroundTasks
 from starlette.datastructures import UploadFile
 from starlette.requests import HTTPConnection, Request
 from starlette.responses import HTMLResponse, JSONResponse, Response
@@ -87,7 +88,10 @@ class GraphQLApp:
                 context = await context
             return context
         else:
-            return self.context_value or {"request": request}
+            return self.context_value or {
+                "request": request,
+                "background": BackgroundTasks(),
+            }
 
     async def _handle_http_request(self, request: Request) -> JSONResponse:
         try:
@@ -122,7 +126,11 @@ class GraphQLApp:
             response["errors"] = [format_error(error) for error in result.errors]
 
         status_code = 200 if not result.errors else 400
-        return JSONResponse(response, status_code=status_code)
+        return JSONResponse(
+            response,
+            status_code=status_code,
+            background=context_value.get("background"),
+        )
 
     async def _run_websocket_server(self, websocket: WebSocket) -> None:
         subscriptions: Dict[str, AsyncGenerator] = {}
