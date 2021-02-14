@@ -1,6 +1,6 @@
 # starlette-graphene3
 
-An ASGI app for Graphene v3 (version 3). This can replace `starlette.graphql.GraphQLApp` that is made for Graphene v2.
+A Simple ASGI app for using [Graphene](https://github.com/graphql-python/graphene) v3 with [Starlette](https://github.com/encode/starlette).
 
 [![codecov](https://codecov.io/gh/ciscorn/starlette-graphene3/branch/master/graph/badge.svg)](https://codecov.io/gh/ciscorn/starlette-graphene3)
 
@@ -68,5 +68,5 @@ class Subscription(graphene.ObjectType):
 
 app = Starlette()
 schema = graphene.Schema(query=Query, mutation=Mutation, subscription=Subscription)
-app.mount("/", GraphQLApp(schema))
+app.mount("/", GraphQLApp(schema, playground=True))
 ```
