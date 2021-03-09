@@ -125,10 +125,9 @@ class GraphQLApp:
         if result.errors:
             response["errors"] = [format_error(error) for error in result.errors]
 
-        status_code = 200 if not result.errors else 400
         return JSONResponse(
             response,
-            status_code=status_code,
+            status_code=200,
             background=context_value.get("background"),
         )
 
