@@ -24,7 +24,7 @@ def test_http_json_arg_async(client):
 
 def test_http_json_invalid_query(client):
     res = client.post("/", json={"query": r"query { user { name } }"})
-    assert res.status_code == 400
+    assert res.status_code == 200
     result = res.json()
     assert "errors" in result
 
