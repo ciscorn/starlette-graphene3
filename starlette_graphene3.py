@@ -197,26 +197,27 @@ class GraphQLApp:
         except GraphQLError as e:
             errors = [e]
 
-        if operation and operation.operation == OperationType.SUBSCRIPTION:
-            errors = await self._start_subscription(
-                websocket,
-                operation_id,
-                subscriptions,
-                document,
-                context_value,
-                variable_values,
-                operation_name,
-            )
-        else:
-            errors = await self._handle_query_via_ws(
-                websocket,
-                operation_id,
-                subscriptions,
-                document,
-                context_value,
-                variable_values,
-                operation_name,
-            )
+        if not errors:
+            if operation and operation.operation == OperationType.SUBSCRIPTION:
+                errors = await self._start_subscription(
+                    websocket,
+                    operation_id,
+                    subscriptions,
+                    document,
+                    context_value,
+                    variable_values,
+                    operation_name,
+                )
+            else:
+                errors = await self._handle_query_over_ws(
+                    websocket,
+                    operation_id,
+                    subscriptions,
+                    document,
+                    context_value,
+                    variable_values,
+                    operation_name,
+                )
 
         if errors:
             await websocket.send_json(
@@ -227,7 +228,7 @@ class GraphQLApp:
                 }
             )
 
-    async def _handle_query_via_ws(
+    async def _handle_query_over_ws(
         self,
         websocket,
         operation_id,
@@ -237,7 +238,7 @@ class GraphQLApp:
         variable_values,
         operation_name,
     ) -> List[GraphQLError]:
-        result2 = execute(
+        result = execute(
             self.schema.graphql_schema,
             document,
             root_value=self.root_value,
@@ -247,18 +248,18 @@ class GraphQLApp:
             middleware=self.middleware,
         )
 
-        if isinstance(result2, ExecutionResult) and result2.errors:
-            return result2.errors
+        if isinstance(result, ExecutionResult) and result.errors:
+            return result.errors
 
-        if isawaitable(result2):
-            result2 = await cast(Awaitable[ExecutionResult], result2)
+        if isawaitable(result):
+            result = await cast(Awaitable[ExecutionResult], result)
 
-        result2 = cast(ExecutionResult, result2)
+        result = cast(ExecutionResult, result)
 
         payload: Dict[str, Any] = {}
-        payload["data"] = result2.data
-        if result2.errors:
-            payload["errors"] = [format_error(error) for error in result2.errors]
+        payload["data"] = result.data
+        if result.errors:
+            payload["errors"] = [format_error(error) for error in result.errors]
 
         await websocket.send_json(
             {"type": GQL_DATA, "id": operation_id, "payload": payload}
@@ -275,20 +276,17 @@ class GraphQLApp:
         variable_values,
         operation_name,
     ) -> List[GraphQLError]:
-        try:
-            result = await subscribe(
-                self.schema.graphql_schema,
-                document,
-                context_value=context_value,
-                root_value=self.root_value,
-                variable_values=variable_values,
-                operation_name=operation_name,
-            )
+        result = await subscribe(
+            self.schema.graphql_schema,
+            document,
+            context_value=context_value,
+            root_value=self.root_value,
+            variable_values=variable_values,
+            operation_name=operation_name,
+        )
 
-            if isinstance(result, ExecutionResult) and result.errors:
-                return result.errors
-        except GraphQLError as e:
-            return [e]
+        if isinstance(result, ExecutionResult) and result.errors:
+            return result.errors
 
         asyncgen = cast(AsyncGenerator, result)
         subscriptions[operation_id] = asyncgen
@@ -303,10 +301,7 @@ class GraphQLApp:
         try:
             async for result in asyncgen:
                 payload = {}
-                if result.data:
-                    payload["data"] = result.data
-                if result.errors:
-                    payload["errors"] = [format_error(error) for error in result.errors]
+                payload["data"] = result.data
                 await websocket.send_json(
                     {"type": GQL_DATA, "id": operation_id, "payload": payload}
                 )
@@ -344,7 +339,7 @@ async def _get_operation_from_request(request: Request):
 async def _get_operation_from_multipart(request: Request):
     try:
         request_body = await request.form()
-    except ValueError:
+    except Exception:
         raise ValueError("Request body is not a valid multipart/form-data")
 
     try:

@@ -6,6 +6,7 @@ __pycache__/
 .env
 .coverage
 /coverage.xml
+htmlcov
 .pytest_cache/
 *.egg-info
 .vscode/

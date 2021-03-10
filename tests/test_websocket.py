@@ -39,6 +39,24 @@ def test_single_subscription(client):
         ws.send_json({"type": GQL_CONNECTION_TERMINATE})
 
 
+def test_single_subscription_invalid_query(client):
+    with client.websocket_connect("/", "graphql-ws") as ws:
+        ws.send_json({"type": GQL_CONNECTION_INIT})
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_CONNECTION_ACK
+        ws.send_json(
+            {
+                "type": GQL_START,
+                "id": "q1",
+                "payload": {"query": r"subscription { <invalid query> }"},
+            }
+        )
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_ERROR
+        assert "message" in msg["payload"]
+        assert "locations" in msg["payload"]
+
+
 def test_single_subscription_error1(client):
     with client.websocket_connect("/", "graphql-ws") as ws:
         ws.send_json({"type": GQL_CONNECTION_INIT})
@@ -76,6 +94,22 @@ def test_single_subscription_error2(client):
         msg = ws.receive_json()
         assert msg["type"] == GQL_DATA
         assert "errors" in msg["payload"]
+
+
+def test_single_subscription_broken(client):
+    with client.websocket_connect("/", "graphql-ws") as ws:
+        ws.send_json({"type": GQL_CONNECTION_INIT})
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_CONNECTION_ACK
+        ws.send_json(
+            {
+                "type": GQL_START,
+                "id": "q1",
+                "payload": {"query": r"subscription { broken }"},
+            }
+        )
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_ERROR
 
 
 def test_named_subscription(client):
@@ -196,7 +230,7 @@ def test_query_over_ws(client):
                 "type": GQL_START,
                 "id": "q1",
                 "payload": {
-                    "query": r'query { user(id: "alice") { name } }',
+                    "query": r'query { userAsync(id: "alice") { name } }',
                     "operationName": None,
                 },
             }
@@ -204,7 +238,64 @@ def test_query_over_ws(client):
         msg = ws.receive_json()
         assert msg["type"] == GQL_DATA
         assert msg["id"] == "q1"
-        assert msg["payload"]["data"]["user"]["name"] == "Alice"
+        assert msg["payload"]["data"]["userAsync"]["name"] == "Alice"
+        ws.send_json({"type": GQL_CONNECTION_TERMINATE})
+
+
+def test_query_over_ws_error(client):
+    with client.websocket_connect("/", "graphql-ws") as ws:
+        ws.send_json({"type": GQL_CONNECTION_INIT})
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_CONNECTION_ACK
+        ws.send_json(
+            {
+                "type": GQL_START,
+                "id": "q1",
+                "payload": {
+                    "query": r'query { userError(id: "alice") { name } }',
+                    "operationName": None,
+                },
+            }
+        )
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_ERROR
+        ws.send_json({"type": GQL_CONNECTION_TERMINATE})
+
+    with client.websocket_connect("/", "graphql-ws") as ws:
+        ws.send_json({"type": GQL_CONNECTION_INIT})
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_CONNECTION_ACK
+        ws.send_json(
+            {
+                "type": GQL_START,
+                "id": "q1",
+                "payload": {
+                    "query": r"query { userAsync(id: NOT_STRING) { name } }",
+                    "operationName": None,
+                },
+            }
+        )
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_ERROR
+        ws.send_json({"type": GQL_CONNECTION_TERMINATE})
+
+    with client.websocket_connect("/", "graphql-ws") as ws:
+        ws.send_json({"type": GQL_CONNECTION_INIT})
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_CONNECTION_ACK
+        ws.send_json(
+            {
+                "type": GQL_START,
+                "id": "q1",
+                "payload": {
+                    "query": r'query { userAsyncError(id: "alice") { name } }',
+                    "operationName": None,
+                },
+            }
+        )
+        msg = ws.receive_json()
+        assert msg["type"] == GQL_DATA
+        assert msg["payload"].get("errors")
         ws.send_json({"type": GQL_CONNECTION_TERMINATE})
 
 
