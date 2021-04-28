@@ -1,6 +1,6 @@
 # starlette-graphene3
 
-A Simple ASGI app for using [Graphene](https://github.com/graphql-python/graphene) v3 with [Starlette](https://github.com/encode/starlette).
+A simple ASGI app for using [Graphene](https://github.com/graphql-python/graphene) v3 with [Starlette](https://github.com/encode/starlette).
 
 ![Test](https://github.com/ciscorn/starlette-graphene3/actions/workflows/test.yml/badge.svg?branch=master)
 [![codecov](https://codecov.io/gh/ciscorn/starlette-graphene3/branch/master/graph/badge.svg)](https://codecov.io/gh/ciscorn/starlette-graphene3)
@@ -71,3 +71,14 @@ app = Starlette()
 schema = graphene.Schema(query=Query, mutation=Mutation, subscription=Subscription)
 app.mount("/", GraphQLApp(schema, playground=True))
 ```
+
+## GraphQLApp
+
+`GraphQLApp(schema, [options...])`
+
+- (required) `schema`: graphene.Schema
+- (optional) `playground` (default: `True`)
+- (optional) `context_value` (default: `None`)
+- (optional) `root_value` (default: `None`)
+- (optional) `middleware` (default: `None`)
+- (optional) `playground_options` (default: `None`)

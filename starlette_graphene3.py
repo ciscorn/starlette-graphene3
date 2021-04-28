@@ -57,25 +57,31 @@ class GraphQLApp:
         context_value: ContextValue = None,
         root_value: RootValue = None,
         middleware: Optional[Middleware] = None,
+        playground_options: Optional[Dict[str, Any]] = None,
     ):
         self.schema = schema
         self.playground = playground
         self.context_value = context_value
         self.root_value = root_value
         self.middleware = middleware
+        self.playground_options_str = json.dumps(playground_options or {})
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "http":
             request = Request(scope=scope, receive=receive)
             response: Response
             if request.method == "GET" and self.playground:
-                response = HTMLResponse(PLAYGROUND_HTML)
+                body = PLAYGROUND_HTML.replace(
+                    "PLAYGROUND_OPTIONS", self.playground_options_str
+                )
+                response = HTMLResponse(body)
             elif request.method == "POST":
                 response = await self._handle_http_request(request)
             else:
                 response = Response(status_code=405)
             await response(scope, receive, send)
         elif scope["type"] == "websocket":
+            print("WS")
             websocket = WebSocket(scope=scope, receive=receive, send=send)
             await self._run_websocket_server(websocket)
         else:
@@ -424,9 +430,7 @@ PLAYGROUND_HTML = """
     </div>
   </div>
   <script>window.addEventListener('load', function (event) {
-      GraphQLPlayground.init(document.getElementById('root'), {
-        // options as 'endpoint' belong here
-      })
+      GraphQLPlayground.init(document.getElementById('root'), PLAYGROUND_OPTIONS)
     })</script>
 </body>
 </html>
