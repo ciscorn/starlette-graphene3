@@ -547,7 +547,7 @@ add "&raw" to the end of the URL within a browser.
     }
     var fetcher;
     if (true) {
-      var subscriptionsEndpoint = (location.protocol === 'http:' ? 'ws' : 'wss') + '://' + location.host + '/graphql/';
+      var subscriptionsEndpoint = (location.protocol === 'http:' ? 'ws' : 'wss') + '://' + location.host + location.pathname;
       var subscriptionsClient = new window.SubscriptionsTransportWs.SubscriptionClient(subscriptionsEndpoint, {
         reconnect: true
       });
