@@ -12,7 +12,15 @@ def test_http_get_playground_enabled(schema):
     assert client.get("/").status_code == 200
 
 
-def test_http_get_playground_disabled(schema):
+def test_http_get_graphiql_enabled(schema):
+    app = Starlette()
+    app.mount("/", GraphQLApp(schema, IDE="graphiql"))
+    client = TestClient(app)
+
+    assert client.get("/").status_code == 200
+
+
+def test_http_get_ide_disabled(schema):
     app = Starlette()
     app.mount("/", GraphQLApp(schema, IDE=None))
     client = TestClient(app)
