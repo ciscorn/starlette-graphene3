@@ -45,51 +45,79 @@ GQL_ERROR = "error"
 GQL_START = "start"
 GQL_STOP = "stop"
 
-ContextValue = Union[Any, Callable[[Any], Any]]
+ContextValue = Union[Any, Callable[[HTTPConnection], Any]]
 RootValue = Any
+
+
+def make_graphiql_handler():
+    def handler(request: Request) -> Response:
+        return HTMLResponse(_GRAPHIQL_HTML)
+
+    return handler
+
+
+def make_playground_handler(playground_options=None):
+    playground_options_str = json.dumps(playground_options or {})
+    content = _PLAYGROUND_HTML.replace("PLAYGROUND_OPTIONS", playground_options_str)
+
+    def handler(request: Request) -> Response:
+        return HTMLResponse(content)
+
+    return handler
 
 
 class GraphQLApp:
     def __init__(
         self,
         schema: graphene.Schema,
-        IDE: str = "playground",
+        on_get: Union[
+            None, Callable[[Request], Union[Response, Awaitable[Response]]]
+        ] = None,
         context_value: ContextValue = None,
         root_value: RootValue = None,
         middleware: Optional[Middleware] = None,
-        playground_options: Optional[Dict[str, Any]] = None,
+        playground: bool = False,  # deprecating
     ):
         self.schema = schema
-        self.IDE = IDE
+        self.on_get = on_get
         self.context_value = context_value
         self.root_value = root_value
         self.middleware = middleware
-        self.playground_options_str = json.dumps(playground_options or {})
+
+        if playground and self.on_get is None:
+            self.on_get = make_playground_handler()
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "http":
             request = Request(scope=scope, receive=receive)
-            response: Response
-            if request.method == "GET":
-                if self.IDE == "graphiql":
-                    body = GRAPHIQL_HTML
-                    response = HTMLResponse(body)
-                elif request.method == "GET" and self.IDE == "playground":
-                    body = PLAYGROUND_HTML.replace(
-                        "PLAYGROUND_OPTIONS", self.playground_options_str
-                    )
-                    response = HTMLResponse(body)
-            elif request.method == "POST":
+            response: Optional[Response] = None
+            if request.method == "POST":
                 response = await self._handle_http_request(request)
-            else:
+            elif request.method == "GET":
+                response = await self._get_on_get(request)
+
+            if not response:
                 response = Response(status_code=405)
             await response(scope, receive, send)
+
         elif scope["type"] == "websocket":
-            print("WS")
             websocket = WebSocket(scope=scope, receive=receive, send=send)
             await self._run_websocket_server(websocket)
+
         else:
             raise ValueError(f"Unsupported scope type: ${scope['type']}")
+
+    async def _get_on_get(self, request: Request) -> Optional[Response]:
+        handler = self.on_get
+
+        if handler is None:
+            return None
+
+        response = handler(request)
+        if isawaitable(response):
+            return await cast(Awaitable, response)
+        else:
+            return cast(Response, response)
 
     async def _get_context_value(self, request: HTTPConnection) -> Any:
         if callable(self.context_value):
@@ -388,7 +416,7 @@ def _inject_file_to_operations(ops_tree, _file, path):
         _inject_file_to_operations(ops_tree[key], _file, path[1:])
 
 
-PLAYGROUND_HTML = """
+_PLAYGROUND_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
@@ -440,14 +468,7 @@ PLAYGROUND_HTML = """
 </html>
 """.strip()  # noqa: B950
 
-GRAPHIQL_HTML = """
-<!--
-The request to this GraphQL server provided the header "Accept: text/html"
-and as a result has been presented GraphiQL - an in-browser IDE for
-exploring GraphQL.
-If you wish to receive JSON, provide the header "Accept: application/json" or
-add "&raw" to the end of the URL within a browser.
--->
+_GRAPHIQL_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
@@ -458,16 +479,18 @@ add "&raw" to the end of the URL within a browser.
       overflow: hidden;
       width: 100%;
     }
+    #graphiql {
+      height: 100vh;
+    }
   </style>
-  <link href="//cdn.jsdelivr.net/npm/graphiql@0.12.0/graphiql.css" rel="stylesheet"/>
-  <script src="//cdn.jsdelivr.net/npm/whatwg-fetch@2.0.3/fetch.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/react@16.2.0/umd/react.production.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/react-dom@16.2.0/umd/react-dom.production.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/graphiql@0.12.0/graphiql.min.js"></script>
+  <link href="//unpkg.com/graphiql/graphiql.css" rel="stylesheet"/>
+  <script src="//unpkg.com/react@16/umd/react.production.min.js"></script>
+  <script src="//unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
   <script src="//unpkg.com/subscriptions-transport-ws@0.7.0/browser/client.js"></script>
   <script src="//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js"></script>
 </head>
 <body>
+  <script src="//unpkg.com/graphiql/graphiql.min.js"></script>
   <script>
     // Parse the cookie value for a CSRF token
     var csrftoken;
@@ -484,26 +507,25 @@ add "&raw" to the end of the URL within a browser.
           decodeURIComponent(entry.slice(eq + 1));
       }
     });
+
     // Produce a Location query string from a parameter object.
-    function locationQuery(params) {
-      return '?' + Object.keys(params).map(function (key) {
-        return encodeURIComponent(key) + '=' +
-          encodeURIComponent(params[key]);
-      }).join('&');
-    }
-    // Derive a fetch URL from the current URL, sans the GraphQL parameters.
     var graphqlParamNames = {
       query: true,
       variables: true,
       operationName: true
     };
-    var otherParams = '';
+    var otherParams = {};
     for (var k in parameters) {
       if (parameters.hasOwnProperty(k) && graphqlParamNames[k] !== true) {
         otherParams[k] = parameters[k];
       }
     }
-    var fetchURL = locationQuery(otherParams);
+    var fetchURL = '?' + Object.keys(otherParams).map(function (key) {
+      return encodeURIComponent(key) + '=' +
+          encodeURIComponent(otherParams[key]);
+      }
+    ).join('&');
+
     // Defines a GraphQL fetcher using the fetch API.
     function graphQLFetcher(graphQLParams) {
       var headers = {
@@ -528,8 +550,20 @@ add "&raw" to the end of the URL within a browser.
         }
       });
     }
+
+    // if variables was provided, try to format it.
+    if (parameters.variables) {
+      try {
+        parameters.variables =
+          JSON.stringify(JSON.parse(parameters.variables), null, 2);
+      } catch (e) {
+        // Do nothing, we want to display the invalid JSON as a string, rather
+        // than present an error.
+      }
+    }
+
     // When the query and variables string is edited, update the URL bar so
-    // that it can be easily shared.
+    // that it can be easily shared
     function onEditQuery(newQuery) {
       parameters.query = newQuery;
       updateURL();
@@ -545,25 +579,22 @@ add "&raw" to the end of the URL within a browser.
     function updateURL() {
       history.replaceState(null, null, locationQuery(parameters));
     }
-    var fetcher;
-    if (true) {
-      var subscriptionsEndpoint = (location.protocol === 'http:' ? 'ws' : 'wss') + '://' + location.host + location.pathname;
-      var subscriptionsClient = new window.SubscriptionsTransportWs.SubscriptionClient(subscriptionsEndpoint, {
-        reconnect: true
-      });
-      fetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(subscriptionsClient, graphQLFetcher);
-    } else {
-      fetcher = graphQLFetcher;
-    }
+    var subscriptionsEndpoint = (location.protocol === 'http:' ? 'ws' : 'wss') + '://' + location.host + location.pathname;
+    var subscriptionsClient = new window.SubscriptionsTransportWs.SubscriptionClient(subscriptionsEndpoint, {
+      reconnect: true
+    });
+    var fetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(subscriptionsClient, graphQLFetcher);
+
     // Render <GraphiQL /> into the body.
     ReactDOM.render(
       React.createElement(GraphiQL, {
         fetcher: fetcher,
+        query: parameters.query,
+        variables: parameters.variables,
+        operationName: parameters.operationName,
         onEditQuery: onEditQuery,
         onEditVariables: onEditVariables,
         onEditOperationName: onEditOperationName,
-        query: '',
-        response: '',
       }),
       document.body
     );
@@ -571,4 +602,3 @@ add "&raw" to the end of the URL within a browser.
 </body>
 </html>
 """.strip()  # noqa: B950
-
