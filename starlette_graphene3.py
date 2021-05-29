@@ -53,14 +53,14 @@ class GraphQLApp:
     def __init__(
         self,
         schema: graphene.Schema,
-        playground: bool = True,
+        IDE: str = "playground",
         context_value: ContextValue = None,
         root_value: RootValue = None,
         middleware: Optional[Middleware] = None,
         playground_options: Optional[Dict[str, Any]] = None,
     ):
         self.schema = schema
-        self.playground = playground
+        self.IDE = IDE
         self.context_value = context_value
         self.root_value = root_value
         self.middleware = middleware
@@ -70,11 +70,15 @@ class GraphQLApp:
         if scope["type"] == "http":
             request = Request(scope=scope, receive=receive)
             response: Response
-            if request.method == "GET" and self.playground:
-                body = PLAYGROUND_HTML.replace(
-                    "PLAYGROUND_OPTIONS", self.playground_options_str
-                )
-                response = HTMLResponse(body)
+            if request.method == "GET":
+                if self.IDE == "graphiql":
+                    body = GRAPHIQL_HTML
+                    response = HTMLResponse(body)
+                elif request.method == "GET" and self.IDE == "playground":
+                    body = PLAYGROUND_HTML.replace(
+                        "PLAYGROUND_OPTIONS", self.playground_options_str
+                    )
+                    response = HTMLResponse(body)
             elif request.method == "POST":
                 response = await self._handle_http_request(request)
             else:
@@ -435,3 +439,136 @@ PLAYGROUND_HTML = """
 </body>
 </html>
 """.strip()  # noqa: B950
+
+GRAPHIQL_HTML = """
+<!--
+The request to this GraphQL server provided the header "Accept: text/html"
+and as a result has been presented GraphiQL - an in-browser IDE for
+exploring GraphQL.
+If you wish to receive JSON, provide the header "Accept: application/json" or
+add "&raw" to the end of the URL within a browser.
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      width: 100%;
+    }
+  </style>
+  <link href="//cdn.jsdelivr.net/npm/graphiql@0.12.0/graphiql.css" rel="stylesheet"/>
+  <script src="//cdn.jsdelivr.net/npm/whatwg-fetch@2.0.3/fetch.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/react@16.2.0/umd/react.production.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/react-dom@16.2.0/umd/react-dom.production.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/graphiql@0.12.0/graphiql.min.js"></script>
+  <script src="//unpkg.com/subscriptions-transport-ws@0.7.0/browser/client.js"></script>
+  <script src="//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js"></script>
+</head>
+<body>
+  <script>
+    // Parse the cookie value for a CSRF token
+    var csrftoken;
+    var cookies = ('; ' + document.cookie).split('; csrftoken=');
+    if (cookies.length == 2)
+      csrftoken = cookies.pop().split(';').shift();
+
+    // Collect the URL parameters
+    var parameters = {};
+    window.location.search.substr(1).split('&').forEach(function (entry) {
+      var eq = entry.indexOf('=');
+      if (eq >= 0) {
+        parameters[decodeURIComponent(entry.slice(0, eq))] =
+          decodeURIComponent(entry.slice(eq + 1));
+      }
+    });
+    // Produce a Location query string from a parameter object.
+    function locationQuery(params) {
+      return '?' + Object.keys(params).map(function (key) {
+        return encodeURIComponent(key) + '=' +
+          encodeURIComponent(params[key]);
+      }).join('&');
+    }
+    // Derive a fetch URL from the current URL, sans the GraphQL parameters.
+    var graphqlParamNames = {
+      query: true,
+      variables: true,
+      operationName: true
+    };
+    var otherParams = '';
+    for (var k in parameters) {
+      if (parameters.hasOwnProperty(k) && graphqlParamNames[k] !== true) {
+        otherParams[k] = parameters[k];
+      }
+    }
+    var fetchURL = locationQuery(otherParams);
+    // Defines a GraphQL fetcher using the fetch API.
+    function graphQLFetcher(graphQLParams) {
+      var headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      };
+      if (csrftoken) {
+        headers['X-CSRFToken'] = csrftoken;
+      }
+      return fetch(fetchURL, {
+        method: 'post',
+        headers: headers,
+        body: JSON.stringify(graphQLParams),
+        credentials: 'include',
+      }).then(function (response) {
+        return response.text();
+      }).then(function (responseBody) {
+        try {
+          return JSON.parse(responseBody);
+        } catch (error) {
+          return responseBody;
+        }
+      });
+    }
+    // When the query and variables string is edited, update the URL bar so
+    // that it can be easily shared.
+    function onEditQuery(newQuery) {
+      parameters.query = newQuery;
+      updateURL();
+    }
+    function onEditVariables(newVariables) {
+      parameters.variables = newVariables;
+      updateURL();
+    }
+    function onEditOperationName(newOperationName) {
+      parameters.operationName = newOperationName;
+      updateURL();
+    }
+    function updateURL() {
+      history.replaceState(null, null, locationQuery(parameters));
+    }
+    var fetcher;
+    if (true) {
+      var subscriptionsEndpoint = (location.protocol === 'http:' ? 'ws' : 'wss') + '://' + location.host + location.pathname;
+      var subscriptionsClient = new window.SubscriptionsTransportWs.SubscriptionClient(subscriptionsEndpoint, {
+        reconnect: true
+      });
+      fetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(subscriptionsClient, graphQLFetcher);
+    } else {
+      fetcher = graphQLFetcher;
+    }
+    // Render <GraphiQL /> into the body.
+    ReactDOM.render(
+      React.createElement(GraphiQL, {
+        fetcher: fetcher,
+        onEditQuery: onEditQuery,
+        onEditVariables: onEditVariables,
+        onEditOperationName: onEditOperationName,
+        query: '',
+        response: '',
+      }),
+      document.body
+    );
+  </script>
+</body>
+</html>
+""".strip()  # noqa: B950
+

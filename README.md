@@ -69,7 +69,9 @@ class Subscription(graphene.ObjectType):
 
 app = Starlette()
 schema = graphene.Schema(query=Query, mutation=Mutation, subscription=Subscription)
-app.mount("/", GraphQLApp(schema, playground=True))
+app.mount("/", GraphQLApp(schema, IDE="playground")) # playground IDE
+# app.mount("/", GraphQLApp(schema, IDE="graphiql")) # graphiql IDE
+# app.mount("/", GraphQLApp(schema, IDE=None)) # no IDE
 ```
 
 ## GraphQLApp
@@ -77,7 +79,7 @@ app.mount("/", GraphQLApp(schema, playground=True))
 `GraphQLApp(schema, [options...])`
 
 - (required) `schema`: graphene.Schema
-- (optional) `playground` (default: `True`)
+- (optional) `IDE` (default: `playground`): choses the GraphQL IDE. It can be `graphiql`, `playground`, or `None` (disables IDE).
 - (optional) `context_value` (default: `None`)
 - (optional) `root_value` (default: `None`)
 - (optional) `middleware` (default: `None`)

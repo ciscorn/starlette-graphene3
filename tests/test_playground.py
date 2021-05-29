@@ -14,7 +14,7 @@ def test_http_get_playground_enabled(schema):
 
 def test_http_get_playground_disabled(schema):
     app = Starlette()
-    app.mount("/", GraphQLApp(schema, playground=False))
+    app.mount("/", GraphQLApp(schema, IDE=None))
     client = TestClient(app)
 
     assert client.get("/").status_code == 405
