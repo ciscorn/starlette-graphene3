@@ -81,7 +81,7 @@ app.mount("/", GraphQLApp(schema, on_get=make_graphiql_handler()))  # Graphiql I
 `GraphQLApp(schema, [options...])`
 
 - **(required)** `schema`: graphene.Schema
-- (optional) `on_get` (default: `None`): A request handler for HTTP GET request
+- (optional) `on_get` (default: `None`): An optional request handler for HTTP GET requests
 - (optional) `context_value` (default: `None`)
 - (optional) `root_value` (default: `None`)
 - (optional) `middleware` (default: `None`)
