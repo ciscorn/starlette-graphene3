@@ -10,7 +10,7 @@ It supports:
 - Queries and Mutations (over HTTP or WebSocket)
 - Subscriptions (over WebSocket)
 - File uploading (https://github.com/jaydenseric/graphql-multipart-request-spec)
-- GraphQL Playground
+- GraphiQL / GraphQL Playground
 
 
 ## Installation
@@ -29,7 +29,7 @@ import graphene
 from graphene_file_upload.scalars import Upload
 
 from starlette.applications import Starlette
-from starlette_graphene3 import GraphQLApp
+from starlette_graphene3 import GraphQLApp, make_graphiql_handler
 
 
 class User(graphene.ObjectType):
@@ -69,18 +69,19 @@ class Subscription(graphene.ObjectType):
 
 app = Starlette()
 schema = graphene.Schema(query=Query, mutation=Mutation, subscription=Subscription)
-app.mount("/", GraphQLApp(schema, IDE="playground")) # playground IDE
-# app.mount("/", GraphQLApp(schema, IDE="graphiql")) # graphiql IDE
-# app.mount("/", GraphQLApp(schema, IDE=None)) # no IDE
+
+app.mount("/", GraphQLApp(schema, on_get=make_graphiql_handler()))  # Graphiql IDE
+
+# app.mount("/", GraphQLApp(schema, on_get=make_playground_handler()))  # Playground IDE
+# app.mount("/", GraphQLApp(schema)) # no IDE
 ```
 
 ## GraphQLApp
 
 `GraphQLApp(schema, [options...])`
 
-- (required) `schema`: graphene.Schema
-- (optional) `IDE` (default: `playground`): choses the GraphQL IDE. It can be `graphiql`, `playground`, or `None` (disables IDE).
+- **(required)** `schema`: graphene.Schema
+- (optional) `on_get` (default: `None`): A request handler for HTTP GET request
 - (optional) `context_value` (default: `None`)
 - (optional) `root_value` (default: `None`)
 - (optional) `middleware` (default: `None`)
-- (optional) `playground_options` (default: `None`)
