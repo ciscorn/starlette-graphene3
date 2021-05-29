@@ -70,15 +70,14 @@ class GraphQLApp:
         if scope["type"] == "http":
             request = Request(scope=scope, receive=receive)
             response: Response
-            if request.method == "GET":
-                if self.IDE == "graphiql":
-                    body = GRAPHIQL_HTML
-                    response = HTMLResponse(body)
-                elif request.method == "GET" and self.IDE == "playground":
-                    body = PLAYGROUND_HTML.replace(
-                        "PLAYGROUND_OPTIONS", self.playground_options_str
-                    )
-                    response = HTMLResponse(body)
+            if request.method == "GET" and self.IDE == "graphiql":
+                body = GRAPHIQL_HTML
+                response = HTMLResponse(body)
+            elif request.method == "GET" and self.IDE == "playground":
+                body = PLAYGROUND_HTML.replace(
+                    "PLAYGROUND_OPTIONS", self.playground_options_str
+                )
+                response = HTMLResponse(body)
             elif request.method == "POST":
                 response = await self._handle_http_request(request)
             else:
@@ -571,4 +570,3 @@ add "&raw" to the end of the URL within a browser.
 </body>
 </html>
 """.strip()  # noqa: B950
-
