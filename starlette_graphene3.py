@@ -9,12 +9,14 @@ from typing import (
     Dict,
     List,
     Optional,
+    Type,
     Union,
     cast,
 )
 
 import graphene
 from graphql import (
+    ExecutionContext,
     ExecutionResult,
     GraphQLError,
     Middleware,
@@ -77,12 +79,14 @@ class GraphQLApp:
         root_value: RootValue = None,
         middleware: Optional[Middleware] = None,
         playground: bool = False,  # deprecating
+        execution_context_class: Optional[Type[ExecutionContext]] = None,
     ):
         self.schema = schema
         self.on_get = on_get
         self.context_value = context_value
         self.root_value = root_value
         self.middleware = middleware
+        self.execution_context_class = execution_context_class
 
         if playground and self.on_get is None:
             self.on_get = make_playground_handler()
@@ -157,6 +161,7 @@ class GraphQLApp:
             middleware=self.middleware,
             variable_values=variable_values,
             operation_name=operation_name,
+            execution_context_class=self.execution_context_class,
         )
 
         response: Dict[str, Any] = {"data": result.data}
@@ -284,6 +289,7 @@ class GraphQLApp:
             variable_values=variable_values,
             operation_name=operation_name,
             middleware=self.middleware,
+            execution_context_class=self.execution_context_class,
         )
 
         if isinstance(result, ExecutionResult) and result.errors:
