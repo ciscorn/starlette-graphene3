@@ -85,3 +85,4 @@ app.mount("/", GraphQLApp(schema, on_get=make_graphiql_handler()))  # Graphiql I
 - (optional) `context_value` (default: `None`)
 - (optional) `root_value` (default: `None`)
 - (optional) `middleware` (default: `None`)
+- (optional) `execution_context_class` (default: `None`)
