@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from inspect import isawaitable
 from typing import (
     Any,
@@ -72,12 +73,14 @@ class GraphQLApp:
     def __init__(
         self,
         schema: graphene.Schema,
-        on_get: Union[
-            None, Callable[[Request], Union[Response, Awaitable[Response]]]
+        on_get: Optional[
+            Callable[[Request], Union[Response, Awaitable[Response]]]
         ] = None,
         context_value: ContextValue = None,
         root_value: RootValue = None,
         middleware: Optional[Middleware] = None,
+        error_formatter: Callable[[GraphQLError], Dict[str, Any]] = format_error,
+        logger_name: Optional[str] = None,
         playground: bool = False,  # deprecating
         execution_context_class: Optional[Type[ExecutionContext]] = None,
     ):
@@ -85,8 +88,10 @@ class GraphQLApp:
         self.on_get = on_get
         self.context_value = context_value
         self.root_value = root_value
+        self.error_formatter = error_formatter
         self.middleware = middleware
         self.execution_context_class = execution_context_class
+        self.logger = logging.getLogger(logger_name or __name__)
 
         if playground and self.on_get is None:
             self.on_get = make_playground_handler()
@@ -138,8 +143,8 @@ class GraphQLApp:
     async def _handle_http_request(self, request: Request) -> JSONResponse:
         try:
             operations = await _get_operation_from_request(request)
-        except ValueError as error:
-            return JSONResponse({"errors": [error.args[0]]}, status_code=400)
+        except ValueError as e:
+            return JSONResponse({"errors": [e.args[0]]}, status_code=400)
 
         if isinstance(operations, list):
             return JSONResponse(
@@ -166,7 +171,15 @@ class GraphQLApp:
 
         response: Dict[str, Any] = {"data": result.data}
         if result.errors:
-            response["errors"] = [format_error(error) for error in result.errors]
+            for error in result.errors:
+                if error.original_error:
+                    self.logger.error(
+                        "An exception occurred in resolvers",
+                        exc_info=error.original_error,
+                    )
+            response["errors"] = [
+                self.error_formatter(error) for error in result.errors
+            ]
 
         return JSONResponse(
             response,
@@ -267,7 +280,7 @@ class GraphQLApp:
                 {
                     "type": GQL_ERROR,
                     "id": operation_id,
-                    "payload": format_error(errors[0]),
+                    "payload": self.error_formatter(errors[0]),
                 }
             )
 
@@ -303,7 +316,7 @@ class GraphQLApp:
         payload: Dict[str, Any] = {}
         payload["data"] = result.data
         if result.errors:
-            payload["errors"] = [format_error(error) for error in result.errors]
+            payload["errors"] = [self.error_formatter(error) for error in result.errors]
 
         await websocket.send_json(
             {"type": GQL_DATA, "id": operation_id, "payload": payload}
@@ -344,19 +357,19 @@ class GraphQLApp:
     ) -> None:
         try:
             async for result in asyncgen:
-                payload = {}
-                payload["data"] = result.data
+                payload = {"data": result.data}
                 await websocket.send_json(
                     {"type": GQL_DATA, "id": operation_id, "payload": payload}
                 )
         except Exception as error:
             if not isinstance(error, GraphQLError):
+                self.logger.error("An exception occurred in resolvers", exc_info=error)
                 error = GraphQLError(str(error), original_error=error)
             await websocket.send_json(
                 {
                     "type": GQL_DATA,
                     "id": operation_id,
-                    "payload": {"errors": [format_error(error)]},
+                    "payload": {"errors": [self.error_formatter(error)]},
                 }
             )
 
