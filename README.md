@@ -80,9 +80,22 @@ app.mount("/", GraphQLApp(schema, on_get=make_graphiql_handler()))  # Graphiql I
 
 `GraphQLApp(schema, [options...])`
 
-- **(required)** `schema`: graphene.Schema
-- (optional) `on_get` (default: `None`): An optional request handler for HTTP GET requests
-- (optional) `context_value` (default: `None`)
-- (optional) `root_value` (default: `None`)
-- (optional) `middleware` (default: `None`)
-- (optional) `execution_context_class` (default: `None`)
+```python
+class GraphQLApp:
+    def __init__(
+        self,
+        schema: graphene.Schema,  # Requied
+        *,
+        # Optional keyword parameters
+        on_get: Optional[
+            Callable[[Request], Union[Response, Awaitable[Response]]]
+        ] = None,  # optional HTTP handler for GET requests
+        context_value: ContextValue = None,
+        root_value: RootValue = None,
+        middleware: Optional[Middleware] = None,
+        error_formatter: Callable[[GraphQLError], Dict[str, Any]] = format_error,
+        logger_name: Optional[str] = None,
+        playground: bool = False,  # deprecating
+        execution_context_class: Optional[Type[ExecutionContext]] = None,
+    ):
+```

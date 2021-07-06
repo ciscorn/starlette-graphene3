@@ -73,6 +73,7 @@ class GraphQLApp:
     def __init__(
         self,
         schema: graphene.Schema,
+        *,
         on_get: Optional[
             Callable[[Request], Union[Response, Awaitable[Response]]]
         ] = None,
