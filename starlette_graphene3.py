@@ -317,6 +317,12 @@ class GraphQLApp:
         payload: Dict[str, Any] = {}
         payload["data"] = result.data
         if result.errors:
+            for error in result.errors:
+                if error.original_error:
+                    self.logger.error(
+                        "An exception occurred in resolvers",
+                        exc_info=error.original_error,
+                    )
             payload["errors"] = [self.error_formatter(error) for error in result.errors]
 
         await websocket.send_json(
