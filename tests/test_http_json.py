@@ -22,6 +22,13 @@ def test_http_json_arg_async(client):
     assert "errors" not in result
 
 
+def test_http_json_error(client):
+    res = client.post("/", json={"query": r'query { userError(id: "alice") { name } }'})
+    assert res.status_code == 200
+    result = res.json()
+    assert "errors" in result
+
+
 def test_http_json_invalid_query(client):
     res = client.post("/", json={"query": r"query { user { name } }"})
     assert res.status_code == 200
