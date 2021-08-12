@@ -14,6 +14,12 @@ It supports:
 - GraphiQL / GraphQL Playground
 
 
+## Alternatives
+
+- [tartiflette](https://github.com/tartiflette/tartiflette)
+- [tartiflette-asgi](https://github.com/tartiflette/tartiflette-asgi)
+
+
 ## Installation
 
 ```bash
