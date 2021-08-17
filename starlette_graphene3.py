@@ -10,6 +10,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
     Type,
     Union,
     cast,
@@ -52,14 +53,14 @@ ContextValue = Union[Any, Callable[[HTTPConnection], Any]]
 RootValue = Any
 
 
-def make_graphiql_handler():
+def make_graphiql_handler() -> Callable[[Request], Response]:
     def handler(request: Request) -> Response:
         return HTMLResponse(_GRAPHIQL_HTML)
 
     return handler
 
 
-def make_playground_handler(playground_options=None):
+def make_playground_handler(playground_options=None) -> Callable[[Request], Response]:
     playground_options_str = json.dumps(playground_options or {})
     content = _PLAYGROUND_HTML.replace("PLAYGROUND_OPTIONS", playground_options_str)
 
@@ -82,8 +83,8 @@ class GraphQLApp:
         middleware: Optional[Middleware] = None,
         error_formatter: Callable[[GraphQLError], Dict[str, Any]] = format_error,
         logger_name: Optional[str] = None,
-        playground: bool = False,  # deprecating
         execution_context_class: Optional[Type[ExecutionContext]] = None,
+        playground: bool = False,  # Deprecating. Use on_get instead.
     ):
         self.schema = schema
         self.on_get = on_get
@@ -269,7 +270,6 @@ class GraphQLApp:
                 errors = await self._handle_query_over_ws(
                     websocket,
                     operation_id,
-                    subscriptions,
                     document,
                     context_value,
                     variable_values,
@@ -289,8 +289,7 @@ class GraphQLApp:
         self,
         websocket,
         operation_id,
-        subscriptions,
-        document,
+        document: DocumentNode,
         context_value,
         variable_values,
         operation_name,
@@ -332,11 +331,11 @@ class GraphQLApp:
 
     async def _start_subscription(
         self,
-        websocket,
+        websocket: WebSocket,
         operation_id,
         subscriptions,
-        document,
-        context_value,
+        document: DocumentNode,
+        context_value: ContextValue,
         variable_values,
         operation_name,
     ) -> List[GraphQLError]:
@@ -429,12 +428,13 @@ async def _get_operation_from_multipart(request: Request):
     return operations
 
 
-def _inject_file_to_operations(ops_tree, _file, path):
-    key = path[0]
+def _inject_file_to_operations(ops_tree, _file: UploadFile, path: Sequence[str]):
+    k = path[0]
+    key: Union[str, int]
     try:
-        key = int(key)
+        key = int(k)
     except ValueError:
-        pass
+        key = k
     if len(path) == 1:
         if ops_tree[key] is None:
             ops_tree[key] = _file
