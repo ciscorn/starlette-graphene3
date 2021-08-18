@@ -16,7 +16,7 @@ It supports:
 
 ## Alternatives
 
-- [tartiflette](https://github.com/tartiflette/tartiflette)
+- [tartiflette](https://github.com/tartiflette/tartiflette) &mdash; Python GraphQL Engine by dailymotion
 - [tartiflette-asgi](https://github.com/tartiflette/tartiflette-asgi)
 
 
