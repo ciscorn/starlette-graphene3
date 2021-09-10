@@ -421,9 +421,15 @@ async def _get_operation_from_multipart(request: Request):
 
     files = {k: v for (k, v) in request_body.items() if isinstance(v, UploadFile)}
     for (name, paths) in name_path_map.items():
+        file = files.get(name)
+        if not file:
+            raise ValueError(
+                f"File fields don't contain a valid UploadFile type for '{name}' mapping"
+            )
+
         for path in paths:
             path = tuple(path.split("."))
-            _inject_file_to_operations(operations, files[name], path)
+            _inject_file_to_operations(operations, file, path)
 
     return operations
 
