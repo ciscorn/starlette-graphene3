@@ -18,6 +18,23 @@ def test_http_multipart(client, files):
     assert res.json()["data"]["uploadFile"]["ok"] is True
 
 
+def test_http_multipart_missing_file(client, files):
+    res = client.post(
+        "/",
+        data={
+            "operations": json.dumps(
+                {
+                    "query": "mutation ($file: Upload!) { uploadFile(file: $file) { ok } }",
+                    "variables": {"file": None},
+                },
+            ),
+            "map": json.dumps({"invalid_name": ["variables.file"]}),
+        },
+        files=files,
+    )
+    assert "errors" in res.json()
+
+
 def test_http_invalid_multipart(client, files):
     res = client.post(
         "/", headers={"Content-type": "multipart/form-data"}, data="<broken>"
