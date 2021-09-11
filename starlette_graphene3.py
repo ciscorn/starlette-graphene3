@@ -60,7 +60,9 @@ def make_graphiql_handler() -> Callable[[Request], Response]:
     return handler
 
 
-def make_playground_handler(playground_options=None) -> Callable[[Request], Response]:
+def make_playground_handler(
+    playground_options: Optional[Dict[str, Any]] = None
+) -> Callable[[Request], Response]:
     playground_options_str = json.dumps(playground_options or {})
     content = _PLAYGROUND_HTML.replace("PLAYGROUND_OPTIONS", playground_options_str)
 
@@ -126,7 +128,7 @@ class GraphQLApp:
 
         response = handler(request)
         if isawaitable(response):
-            return await cast(Awaitable, response)
+            return await cast(Awaitable[Response], response)
         else:
             return cast(Response, response)
 
@@ -190,7 +192,7 @@ class GraphQLApp:
         )
 
     async def _run_websocket_server(self, websocket: WebSocket) -> None:
-        subscriptions: Dict[str, AsyncGenerator] = {}
+        subscriptions: Dict[str, AsyncGenerator[Any, None]] = {}
         await websocket.accept("graphql-ws")
         try:
             while (
@@ -212,10 +214,10 @@ class GraphQLApp:
 
     async def _handle_websocket_message(
         self,
-        message: dict,
+        message: Dict[str, Any],
         websocket: WebSocket,
-        subscriptions: Dict[str, AsyncGenerator],
-    ):
+        subscriptions: Dict[str, AsyncGenerator[Any, None]],
+    ) -> None:
         operation_id = cast(str, message.get("id"))
         message_type = cast(str, message.get("type"))
 
@@ -238,8 +240,8 @@ class GraphQLApp:
         data: Any,
         operation_id: str,
         websocket: WebSocket,
-        subscriptions: Dict[str, AsyncGenerator],
-    ):
+        subscriptions: Dict[str, AsyncGenerator[Any, None]],
+    ) -> None:
         query = data["query"]
         variable_values = data.get("variables")
         operation_name = data.get("operationName")
@@ -256,6 +258,7 @@ class GraphQLApp:
             errors = [e]
 
         if not errors:
+            assert document is not None
             if operation and operation.operation == OperationType.SUBSCRIPTION:
                 errors = await self._start_subscription(
                     websocket,
@@ -287,12 +290,12 @@ class GraphQLApp:
 
     async def _handle_query_over_ws(
         self,
-        websocket,
-        operation_id,
+        websocket: WebSocket,
+        operation_id: str,
         document: DocumentNode,
-        context_value,
-        variable_values,
-        operation_name,
+        context_value: ContextValue,
+        variable_values: Dict[str, Any],
+        operation_name: str,
     ) -> List[GraphQLError]:
         result = execute(
             self.schema.graphql_schema,
@@ -332,12 +335,12 @@ class GraphQLApp:
     async def _start_subscription(
         self,
         websocket: WebSocket,
-        operation_id,
-        subscriptions,
+        operation_id: str,
+        subscriptions: Dict[str, AsyncGenerator[Any, None]],
         document: DocumentNode,
         context_value: ContextValue,
-        variable_values,
-        operation_name,
+        variable_values: Dict[str, Any],
+        operation_name: str,
     ) -> List[GraphQLError]:
         result = await subscribe(
             self.schema.graphql_schema,
@@ -351,7 +354,7 @@ class GraphQLApp:
         if isinstance(result, ExecutionResult) and result.errors:
             return result.errors
 
-        asyncgen = cast(AsyncGenerator, result)
+        asyncgen = cast(AsyncGenerator[Any, None], result)
         subscriptions[operation_id] = asyncgen
         asyncio.create_task(
             self._observe_subscription(asyncgen, operation_id, websocket)
@@ -359,7 +362,10 @@ class GraphQLApp:
         return []
 
     async def _observe_subscription(
-        self, asyncgen: AsyncGenerator, operation_id: str, websocket: WebSocket
+        self,
+        asyncgen: AsyncGenerator[Any, None],
+        operation_id: str,
+        websocket: WebSocket,
     ) -> None:
         try:
             async for result in asyncgen:
@@ -386,11 +392,13 @@ class GraphQLApp:
             await websocket.send_json({"type": GQL_COMPLETE, "id": operation_id})
 
 
-async def _get_operation_from_request(request: Request):
+async def _get_operation_from_request(
+    request: Request,
+) -> Union[Dict[str, Any], List[Any]]:
     content_type = request.headers.get("Content-Type", "").split(";")[0]
     if content_type == "application/json":
         try:
-            return await request.json()
+            return cast(Union[Dict[str, Any], List[Any]], await request.json())
         except (TypeError, ValueError):
             raise ValueError("Request body is not a valid JSON")
     elif content_type == "multipart/form-data":
@@ -399,7 +407,9 @@ async def _get_operation_from_request(request: Request):
         raise ValueError("Content-type must be application/json or multipart/form-data")
 
 
-async def _get_operation_from_multipart(request: Request):
+async def _get_operation_from_multipart(
+    request: Request,
+) -> Union[Dict[str, Any], List[Any]]:
     try:
         request_body = await request.form()
     except Exception:
@@ -434,7 +444,9 @@ async def _get_operation_from_multipart(request: Request):
     return operations
 
 
-def _inject_file_to_operations(ops_tree, _file: UploadFile, path: Sequence[str]):
+def _inject_file_to_operations(
+    ops_tree: Any, _file: UploadFile, path: Sequence[str]
+) -> None:
     k = path[0]
     key: Union[str, int]
     try:
