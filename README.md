@@ -13,7 +13,7 @@ It supports:
 - File uploading (https://github.com/jaydenseric/graphql-multipart-request-spec)
 - GraphiQL / GraphQL Playground
 
-
+File uploading requires `python-multipart` to be installed.
 ## Alternatives
 
 - [tartiflette](https://github.com/tartiflette/tartiflette) &mdash; Python GraphQL Engine by dailymotion
