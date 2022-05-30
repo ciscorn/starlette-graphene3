@@ -21,15 +21,16 @@ from graphql import (
     ExecutionContext,
     ExecutionResult,
     GraphQLError,
+    GraphQLFormattedError,
     Middleware,
     OperationType,
     execute,
-    format_error,
     graphql,
     parse,
     subscribe,
     validate,
 )
+from graphql.error.graphql_error import format_error
 from graphql.language.ast import DocumentNode, OperationDefinitionNode
 from graphql.utilities import get_operation_ast
 from starlette.background import BackgroundTasks
@@ -83,7 +84,7 @@ class GraphQLApp:
         context_value: ContextValue = None,
         root_value: RootValue = None,
         middleware: Optional[Middleware] = None,
-        error_formatter: Callable[[GraphQLError], Dict[str, Any]] = format_error,
+        error_formatter: Callable[[GraphQLError], GraphQLFormattedError] = format_error,
         logger_name: Optional[str] = None,
         execution_context_class: Optional[Type[ExecutionContext]] = None,
         playground: bool = False,  # Deprecating. Use on_get instead.

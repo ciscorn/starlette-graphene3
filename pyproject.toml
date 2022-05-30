@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "starlette-graphene3"
-version = "0.5.1"
+version = "0.6.0"
 description = "Use Graphene v3 on Starlette"
 authors = ["Taku Fukada <naninunenor@gmail.com>"]
 license = "MIT"
@@ -16,7 +16,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-graphene = ">=3.0b6"
+graphene = "~=3.1"
 starlette = ">=0.14.1"
 
 [tool.poetry.dev-dependencies]
