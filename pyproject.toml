@@ -16,7 +16,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-graphene = "~=3.1"
+graphene = "~=3.0b8"
 starlette = ">=0.14.1"
 
 [tool.poetry.dev-dependencies]
