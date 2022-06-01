@@ -24,7 +24,6 @@ from graphql import (
     Middleware,
     OperationType,
     execute,
-    format_error,
     graphql,
     parse,
     subscribe,
@@ -38,6 +37,15 @@ from starlette.requests import HTTPConnection, Request
 from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.types import Receive, Scope, Send
 from starlette.websockets import WebSocket, WebSocketDisconnect, WebSocketState
+
+try:
+    # graphql-core==3.2.*
+    from graphql import GraphQLFormattedError
+    from graphql.error.graphql_error import format_error
+except ImportError:
+    # graphql-core==3.1.*
+    from graphql import format_error
+    GraphQLFormattedError = Dict[str, Any]
 
 GQL_CONNECTION_ACK = "connection_ack"
 GQL_CONNECTION_ERROR = "connection_error"
@@ -83,7 +91,7 @@ class GraphQLApp:
         context_value: ContextValue = None,
         root_value: RootValue = None,
         middleware: Optional[Middleware] = None,
-        error_formatter: Callable[[GraphQLError], Dict[str, Any]] = format_error,
+        error_formatter: Callable[[GraphQLError], GraphQLFormattedError] = format_error,
         logger_name: Optional[str] = None,
         execution_context_class: Optional[Type[ExecutionContext]] = None,
         playground: bool = False,  # Deprecating. Use on_get instead.
