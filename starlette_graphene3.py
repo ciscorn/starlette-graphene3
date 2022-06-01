@@ -21,7 +21,6 @@ from graphql import (
     ExecutionContext,
     ExecutionResult,
     GraphQLError,
-    GraphQLFormattedError,
     Middleware,
     OperationType,
     execute,
@@ -30,7 +29,6 @@ from graphql import (
     subscribe,
     validate,
 )
-from graphql.error.graphql_error import format_error
 from graphql.language.ast import DocumentNode, OperationDefinitionNode
 from graphql.utilities import get_operation_ast
 from starlette.background import BackgroundTasks
@@ -39,6 +37,15 @@ from starlette.requests import HTTPConnection, Request
 from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.types import Receive, Scope, Send
 from starlette.websockets import WebSocket, WebSocketDisconnect, WebSocketState
+
+try:
+    # graphql-core==3.2.*
+    from graphql import GraphQLFormattedError
+    from graphql.error.graphql_error import format_error
+except ImportError:
+    # graphql-core==3.1.*
+    from graphql import format_error
+    GraphQLFormattedError = Dict[str, Any]
 
 GQL_CONNECTION_ACK = "connection_ack"
 GQL_CONNECTION_ERROR = "connection_error"
