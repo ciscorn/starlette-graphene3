@@ -561,6 +561,14 @@ _GRAPHIQL_HTML = """
     });
 
     // Produce a Location query string from a parameter object.
+    function locationQuery(params) {
+      return '?' + Object.keys(params).map(function (key) {
+        return encodeURIComponent(key) + '=' +
+          encodeURIComponent(params[key]);
+      }).join('&');
+    }
+
+    // Produce a Location query string from a parameter object.
     var graphqlParamNames = {
       query: true,
       variables: true,
