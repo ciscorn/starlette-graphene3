@@ -16,8 +16,9 @@ It supports:
 File uploading requires `python-multipart` to be installed.
 ## Alternatives
 
-- [tartiflette](https://github.com/tartiflette/tartiflette) &mdash; Python GraphQL Engine by dailymotion
-- [tartiflette-asgi](https://github.com/tartiflette/tartiflette-asgi)
+- [strawberry](https://github.com/strawberry-graphql/strawberry)
+- [ariadne](https://github.com/mirumee/ariadne)
+- [tartiflette](https://github.com/tartiflette/tartiflette) ([tartiflette-asgi](https://github.com/tartiflette/tartiflette-asgi))
 
 
 ## Installation
