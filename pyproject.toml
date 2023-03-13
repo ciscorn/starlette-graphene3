@@ -1,11 +1,12 @@
 [tool.poetry]
 name = "starlette-graphene3"
-version = "0.6.0"
+version = "0.6.1"
 description = "Use Graphene v3 on Starlette"
 authors = ["Taku Fukada <naninunenor@gmail.com>"]
 license = "MIT"
 homepage = "https://github.com/ciscorn/starlette-graphene3"
 repository = "https://github.com/ciscorn/starlette-graphene3"
+packages = [{ include = "starlette_graphene3.py",  from = "src" }]
 keywords = ["graphene", "graphql", "asgi", "starlette"]
 readme = "README.md"
 classifiers = [
@@ -45,12 +46,19 @@ extend-select = "B950"
 extend-ignore = "E203,E501,B008"
 max-line-length = 88
 
+[tool.pyright]
+executionEnvironments = [{ root = "tests", extraPaths = ["src"] }]
+
 [tool.mypy]
 ignore_missing_imports = true
 
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+addopts = ["--import-mode=importlib"]
 
 [tool.coverage.run]
 source = ["starlette_graphene3"]
