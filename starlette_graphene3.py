@@ -45,6 +45,7 @@ try:
 except ImportError:
     # graphql-core==3.1.*
     from graphql import format_error
+
     GraphQLFormattedError = Dict[str, Any]
 
 GQL_CONNECTION_ACK = "connection_ack"
@@ -438,7 +439,7 @@ async def _get_operation_from_multipart(
         raise ValueError("'map' field must be an Object")
 
     files = {k: v for (k, v) in request_body.items() if isinstance(v, UploadFile)}
-    for (name, paths) in name_path_map.items():
+    for name, paths in name_path_map.items():
         file = files.get(name)
         if not file:
             raise ValueError(

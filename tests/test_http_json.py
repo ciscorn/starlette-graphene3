@@ -48,7 +48,7 @@ def test_http_json_invalid_mimtype(client):
 def test_http_json_invalid_json(client):
     res = client.post(
         "/",
-        data=r'+++{"query": "query { me { name } }"}+++',
+        content=r'+++{"query": "query { me { name } }"}+++',
         headers={"Content-Type": "application/json"},
     )
     assert res.status_code == 400

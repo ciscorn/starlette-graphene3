@@ -37,7 +37,7 @@ def test_http_multipart_missing_file(client, files):
 
 def test_http_invalid_multipart(client, files):
     res = client.post(
-        "/", headers={"Content-type": "multipart/form-data"}, data="<broken>"
+        "/", headers={"Content-type": "multipart/form-data"}, content="<broken>"
     )
     assert res.json().get("errors")
 
