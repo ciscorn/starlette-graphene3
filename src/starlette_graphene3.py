@@ -539,8 +539,6 @@ _GRAPHIQL_HTML = """
   <link href="//unpkg.com/graphiql/graphiql.css" rel="stylesheet"/>
   <script src="//unpkg.com/react@16/umd/react.production.min.js"></script>
   <script src="//unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
-  <script src="//unpkg.com/subscriptions-transport-ws@0.7.0/browser/client.js"></script>
-  <script src="//unpkg.com/graphiql-subscriptions-fetcher@0.0.2/browser/client.js"></script>
 </head>
 <body>
   <script src="//unpkg.com/graphiql/graphiql.min.js"></script>
@@ -588,10 +586,11 @@ _GRAPHIQL_HTML = """
     ).join('&');
 
     // Defines a GraphQL fetcher using the fetch API.
-    function graphQLFetcher(graphQLParams) {
+    function graphQLFetcher(graphQLParams, {headers}) {
       var headers = {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...headers,
       };
       if (csrftoken) {
         headers['X-CSRFToken'] = csrftoken;
@@ -640,11 +639,9 @@ _GRAPHIQL_HTML = """
     function updateURL() {
       history.replaceState(null, null, locationQuery(parameters));
     }
-    var subscriptionsEndpoint = (location.protocol === 'http:' ? 'ws' : 'wss') + '://' + location.host + location.pathname;
-    var subscriptionsClient = new window.SubscriptionsTransportWs.SubscriptionClient(subscriptionsEndpoint, {
-      reconnect: true
-    });
-    var fetcher = window.GraphiQLSubscriptionsFetcher.graphQLFetcher(subscriptionsClient, graphQLFetcher);
+    var fetcher = window.GraphiQL.createFetcher({
+        url: location.protocol + "//" + location.host + location.pathname,
+    })
 
     // Render <GraphiQL /> into the body.
     ReactDOM.render(
